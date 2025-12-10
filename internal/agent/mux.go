@@ -2,6 +2,7 @@ package agent
 
 import (
 	"crypto"
+	"crypto/rand"
 	"fmt"
 	"net"
 	"sync"
@@ -118,11 +119,11 @@ func (m *MuxAgent) SignWithFlags(key ssh.PublicKey, data []byte, flags agent.Sig
 				default:
 					algorithm = key.Type()
 				}
-				return algoSigner.SignWithAlgorithm(nil, data, algorithm)
+				return algoSigner.SignWithAlgorithm(rand.Reader, data, algorithm)
 			}
 		}
 
-		return signer.Sign(nil, data)
+		return signer.Sign(rand.Reader, data)
 	}
 
 	// Fall back to fallback agent
