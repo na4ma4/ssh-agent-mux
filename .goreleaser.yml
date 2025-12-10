@@ -1,0 +1,103 @@
+version: 2
+
+env:
+  - CGO_ENABLED=0
+
+before:
+  hooks:
+    - mage
+    - go generate ./...
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: ssh-agent-mux
+    main: ./cmd/ssh-agent-mux
+    binary: ssh-agent-mux
+    ldflags:
+      - "-X github.com/dosquad/go-cliversion.BuildDate={{ .Date }}"
+      - "-X github.com/dosquad/go-cliversion.BuildDebug=false"
+      - "-X github.com/dosquad/go-cliversion.BuildMethod=goreleaser"
+      - "-X github.com/dosquad/go-cliversion.BuildVersion={{.Version}}"
+      - "-X github.com/dosquad/go-cliversion.GitCommit={{.ShortCommit}}"
+      - "-X github.com/dosquad/go-cliversion.GitRepo=https://github.com/na4ma4/ssh-agent-mux"
+      - "-X github.com/dosquad/go-cliversion.GitSlug=na4ma4/ssh-agent-mux"
+      - "-X github.com/dosquad/go-cliversion.GitTag={{.Version}}"
+      - "-X github.com/dosquad/go-cliversion.GitExactTag={{.RawVersion}}"
+      - "-X main.commit={{.ShortCommit}}"
+      - "-X main.date={{ .Date }}"
+      - "-X main.builtBy=goreleaser"
+      - "-X main.repo=https://github.com/na4ma4/ssh-agent-mux"
+      - "-X main.goVersion=1.25.3"
+      - "-X main.version={{.Version}}"
+      - "-s"
+      - "-w"
+    flags:
+      - -tags=release
+      - -buildmode=default
+      - -trimpath
+      - -v
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    goarm: [ '5', '6', '7' ]
+    goos: ['linux', 'darwin', 'windows']
+    goarch: ['amd64', 'arm', 'arm64']
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - allow_different_binary_count: true
+
+checksum:
+  algorithm: sha256
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+nfpms:
+  -
+    id: ssh-agent-mux
+    package_name: ssh-agent-mux
+    file_name_template: "ssh-agent-mux_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
+    ids:
+      - ssh-agent-mux
+    homepage: https://github.com/na4ma4/ssh-agent-mux
+    maintainer: na4ma4 <na4ma4@users.noreply.github.com>
+    description: SSH Agent Multiplexer
+    formats:
+      - apk
+      - deb
+    bindir: /usr/sbin
+
+homebrew_casks:
+  -
+    name: ssh-agent-mux
+    repository:
+      owner: na4ma4
+      name: homebrew-tap
+    ids:
+      - ssh-agent-mux
+    binaries:
+      - ssh-agent-mux
+    commit_author:
+      name: goreleaserbot
+      email: na4ma4@users.noreply.github.com
+    directory: Formula
+    homepage: https://github.com/na4ma4/ssh-agent-mux
+    description: SSH Agent Multiplexer
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ssh-agent-mux"]
+          end
