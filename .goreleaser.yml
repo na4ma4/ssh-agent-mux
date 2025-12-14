@@ -87,7 +87,7 @@ homebrew_casks:
     commit_author:
       name: goreleaserbot
       email: na4ma4@users.noreply.github.com
-    directory: Formula
+    directory: Casks
     homepage: https://github.com/na4ma4/ssh-agent-mux
     description: SSH Agent Multiplexer
     hooks:
