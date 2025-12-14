@@ -1,29 +1,51 @@
-package agent
+package muxagent_test
 
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"log/slog"
+	"os"
 	"testing"
 
+	"github.com/na4ma4/go-contextual"
+	"github.com/na4ma4/go-permbits"
+	"github.com/na4ma4/ssh-agent-mux/api"
+	"github.com/na4ma4/ssh-agent-mux/internal/muxagent"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+	"google.golang.org/protobuf/proto"
 )
 
+func defaultConfig() *api.Config {
+	return api.Config_builder{
+		SocketPath:        proto.String(""),
+		BackendSocketPath: []string{},
+	}.Build()
+}
+
+func TestPermbits(t *testing.T) {
+	var expected os.FileMode = 0o0600
+	actual := permbits.MustString("u=rw,a=")
+	if actual != expected {
+		t.Errorf("Expected perm string %s, got %s", expected, actual)
+	}
+}
+
 func TestNewMuxAgent(t *testing.T) {
-	// Test creating agent without fallback
-	muxAgent, err := NewMuxAgent("")
+	// Test creating agent without backend sockets
+	muxAgent, err := muxagent.NewMuxAgent(contextual.New(t.Context()), slog.New(slog.DiscardHandler), defaultConfig())
 	if err != nil {
 		t.Fatalf("Failed to create mux agent: %v", err)
 	}
 	defer muxAgent.Close()
 
-	if muxAgent.localKeys == nil {
+	if muxAgent.GetLocalKeys() == nil {
 		t.Error("localKeys map should be initialized")
 	}
 }
 
 func TestAddAndListKeys(t *testing.T) {
-	muxAgent, err := NewMuxAgent("")
+	muxAgent, err := muxagent.NewMuxAgent(contextual.New(t.Context()), slog.New(slog.DiscardHandler), defaultConfig())
 	if err != nil {
 		t.Fatalf("Failed to create mux agent: %v", err)
 	}
@@ -61,7 +83,7 @@ func TestAddAndListKeys(t *testing.T) {
 }
 
 func TestRemoveKey(t *testing.T) {
-	muxAgent, err := NewMuxAgent("")
+	muxAgent, err := muxagent.NewMuxAgent(contextual.New(t.Context()), slog.New(slog.DiscardHandler), defaultConfig())
 	if err != nil {
 		t.Fatalf("Failed to create mux agent: %v", err)
 	}
@@ -106,56 +128,71 @@ func TestRemoveKey(t *testing.T) {
 }
 
 func TestRemoveAllKeys(t *testing.T) {
-	muxAgent, err := NewMuxAgent("")
-	if err != nil {
-		t.Fatalf("Failed to create mux agent: %v", err)
+	var muxAgent *muxagent.MuxAgent
+	{
+		var err error
+		muxAgent, err = muxagent.NewMuxAgent(
+			contextual.New(t.Context()), slog.New(slog.DiscardHandler), defaultConfig(),
+		)
+		if err != nil {
+			t.Fatalf("Failed to create mux agent: %v", err)
+		}
+		defer muxAgent.Close()
 	}
-	defer muxAgent.Close()
 
 	// Add multiple keys
-	for i := 0; i < 3; i++ {
-		_, privateKey, err := ed25519.GenerateKey(rand.Reader)
-		if err != nil {
-			t.Fatalf("Failed to generate key: %v", err)
+	for range 3 {
+		var privateKey ed25519.PrivateKey
+		{
+			var err error
+			_, privateKey, err = ed25519.GenerateKey(rand.Reader)
+			if err != nil {
+				t.Fatalf("Failed to generate key: %v", err)
+			}
 		}
 
 		addedKey := agent.AddedKey{
 			PrivateKey: privateKey,
 			Comment:    "test-key",
 		}
-		err = muxAgent.Add(addedKey)
-		if err != nil {
+		if err := muxAgent.Add(addedKey); err != nil {
 			t.Fatalf("Failed to add key: %v", err)
 		}
 	}
 
 	// Verify keys were added
-	keys, err := muxAgent.List()
-	if err != nil {
-		t.Fatalf("Failed to list keys: %v", err)
-	}
-	if len(keys) != 3 {
-		t.Fatalf("Expected 3 keys, got %d", len(keys))
+	var keys []*agent.Key
+	{
+		var err error
+		keys, err = muxAgent.List()
+		if err != nil {
+			t.Fatalf("Failed to list keys: %v", err)
+		}
+		if len(keys) != 3 {
+			t.Fatalf("Expected 3 keys, got %d", len(keys))
+		}
 	}
 
 	// Remove all keys
-	err = muxAgent.RemoveAll()
-	if err != nil {
+	if err := muxAgent.RemoveAll(); err != nil {
 		t.Fatalf("Failed to remove all keys: %v", err)
 	}
 
 	// Verify all keys were removed
-	keys, err = muxAgent.List()
-	if err != nil {
-		t.Fatalf("Failed to list keys: %v", err)
-	}
-	if len(keys) != 0 {
-		t.Fatalf("Expected 0 keys after RemoveAll, got %d", len(keys))
+	{
+		var err error
+		keys, err = muxAgent.List()
+		if err != nil {
+			t.Fatalf("Failed to list keys: %v", err)
+		}
+		if len(keys) != 0 {
+			t.Fatalf("Expected 0 keys after RemoveAll, got %d", len(keys))
+		}
 	}
 }
 
 func TestSignWithKey(t *testing.T) {
-	muxAgent, err := NewMuxAgent("")
+	muxAgent, err := muxagent.NewMuxAgent(contextual.New(t.Context()), slog.New(slog.DiscardHandler), defaultConfig())
 	if err != nil {
 		t.Fatalf("Failed to create mux agent: %v", err)
 	}
@@ -200,7 +237,7 @@ func TestSignWithKey(t *testing.T) {
 }
 
 func TestSignWithNonExistentKey(t *testing.T) {
-	muxAgent, err := NewMuxAgent("")
+	muxAgent, err := muxagent.NewMuxAgent(contextual.New(t.Context()), slog.New(slog.DiscardHandler), defaultConfig())
 	if err != nil {
 		t.Fatalf("Failed to create mux agent: %v", err)
 	}

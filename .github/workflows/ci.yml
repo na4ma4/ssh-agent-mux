@@ -1,0 +1,14 @@
+name: "CI"
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  unit-test:
+    name: "Unit Test"
+    uses: na4ma4/actions/.github/workflows/unit-test.yml@main
+    secrets: inherit

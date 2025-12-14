@@ -1,142 +1,346 @@
 # ssh-agent-mux
 
-SSH Agent Multiplexer - A multiplexing SSH agent that stores keys locally and falls back to another agent (like 1Password).
+**SSH Agent Multiplexer** - A long-running SSH agent that combines local ephemeral keys with backend agents like 1Password.
 
-## Overview
+[![Go Version](https://img.shields.io/github/go-mod/go-version/na4ma4/ssh-agent-mux)](go.mod)
+[![License](https://img.shields.io/github/license/na4ma4/ssh-agent-mux)](LICENSE)
 
-`ssh-agent-mux` is an SSH agent that acts as a multiplexer, allowing you to:
+## What Problem Does This Solve?
 
-- **Add ephemeral keys locally** - Store temporary SSH keys that you need for short-term use
-- **Fallback to another agent** - Seamlessly use keys from another SSH agent (like 1Password) when local keys don't match
-- **Work with read-only agents** - Solves the problem where agents like 1Password don't accept key additions
+Modern SSH agents like **1Password** and **Secretive** are excellent for managing your permanent SSH keys securely, but they have one limitation: **you can't add temporary keys using `ssh-add`**. This becomes problematic when you need:
 
-This is particularly useful when you need to add ephemeral keys to your agent but still want to use 1Password (or another SSH agent) for normal operation.
+- Temporary deploy keys for CI/CD
+- Short-lived keys for bastion/jump hosts
+- Ephemeral keys for testing
+- Keys you don't want to permanently store
+
+`ssh-agent-mux` solves this by creating a multiplexing agent that:
+1. Stores temporary keys locally in memory
+2. Forwards all other requests to your backend agent (like 1Password)
+3. Runs as a background daemon, just like a regular SSH agent
 
 ## How It Works
 
-When an SSH client makes a request:
+```
+┌──────────────┐
+│ SSH Client   │
+│ (ssh, git)   │
+└──────┬───────┘
+       │
+       │ SSH_AUTH_SOCK
+       │
+┌──────▼───────────────┐
+│  ssh-agent-mux       │
+│                      │
+│  ┌────────────────┐  │
+│  │ Local Keys     │  │ ← Keys added with ssh-add
+│  │ (in memory)    │  │
+│  └────────────────┘  │
+│          │           │
+│          ▼           │
+│  ┌────────────────┐  │
+│  │ Backend Agent  │  │ ← 1Password, Secretive, etc.
+│  │ (fallback)     │  │
+│  └────────────────┘  │
+└──────────────────────┘
+```
 
-1. **List Keys**: Returns all local keys first, then keys from the fallback agent
-2. **Sign Request**: Tries to sign with local keys first, falls back to the fallback agent if the key isn't found locally
-3. **Add Key**: Stores the key locally (fallback agents like 1Password typically don't support this)
-4. **Remove Key**: Removes keys from local storage only
+**Request Flow:**
+- `ssh-add <key>` → Stores key **locally** (backend agents typically reject this)
+- `ssh-add -l` → Lists **local keys** first, then **backend keys**
+- `ssh user@host` → Tries **local keys** first, then **backend keys**
+- `ssh-add -d <key>` → Removes from **local storage** only
 
 ## Installation
 
-### From Source
+### Using Go Install
 
 ```bash
 go install github.com/na4ma4/ssh-agent-mux/cmd/ssh-agent-mux@latest
 ```
 
-### Build Locally
+### From Source
 
 ```bash
 git clone https://github.com/na4ma4/ssh-agent-mux.git
 cd ssh-agent-mux
-go build ./cmd/ssh-agent-mux
+mage build
+# Binary will be in artifacts/build/release/
 ```
 
-## Usage
+### Pre-built Binaries
 
-### Basic Usage
+Check the [Releases](https://github.com/na4ma4/ssh-agent-mux/releases) page for pre-built binaries.
 
-Start the agent with default settings (uses `$SSH_AUTH_SOCK` as fallback):
+## Quick Start
+
+### 1. Start the Agent
+
+The agent runs as a background daemon by default:
 
 ```bash
-./ssh-agent-mux
+ssh-agent-mux
 ```
 
-The agent will print the socket path. Set it in your environment:
+On first run, it will print the configuration:
 
-```bash
-export SSH_AUTH_SOCK=/tmp/ssh-agent-mux-1000.sock
+```
+SSH_AUTH_SOCK=/Users/yourname/.ssh/ssh-agent-mux.sock
+SSH_AGENT_PID=12345
 ```
 
-### With Custom Socket Path
+### 2. Configure Your Shell
+
+Add to your `~/.zshrc` or `~/.bashrc`:
 
 ```bash
-./ssh-agent-mux -socket /path/to/custom.sock
+export SSH_AUTH_SOCK="$HOME/.ssh/ssh-agent-mux.sock"
 ```
 
-### With Specific Fallback Agent
+### 3. Verify It's Working
 
 ```bash
-./ssh-agent-mux -fallback /path/to/1password/agent.sock
-```
+# Check status
+ssh-agent-mux -c config
 
-### With Verbose Logging
-
-```bash
-./ssh-agent-mux -verbose
-```
-
-### Complete Example with 1Password
-
-```bash
-# Start the multiplexer, using 1Password as fallback
-./ssh-agent-mux -fallback ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock -verbose
-
-# In another terminal, set the environment variable
-export SSH_AUTH_SOCK=/tmp/ssh-agent-mux-1000.sock
-
-# Add an ephemeral key
-ssh-add ~/.ssh/temporary_key
-
-# List all keys (local + 1Password)
+# List keys (shows both local and backend keys)
 ssh-add -l
+```
 
-# Use SSH as normal - local keys and 1Password keys work seamlessly
-ssh user@example.com
+## Usage Examples
+
+### Adding a Temporary Key
+
+```bash
+# Generate a temporary key
+ssh-keygen -t ed25519 -f ~/.ssh/temp_deploy_key -N ""
+
+# Add it (stored locally in ssh-agent-mux)
+ssh-add ~/.ssh/temp_deploy_key
+
+# Use it
+git clone git@github.com:yourorg/repo.git
+
+# Remove when done
+ssh-add -d ~/.ssh/temp_deploy_key
+```
+
+### Running with 1Password
+
+```bash
+# macOS with 1Password
+ssh-agent-mux --backend-agent ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
+
+# Your 1Password keys will be available automatically
+# Plus you can now add temporary keys with ssh-add
+```
+
+### Debug Mode
+
+```bash
+# Run in foreground with debug logging
+ssh-agent-mux --foreground --debug
+
+# Or send logs to a file
+ssh-agent-mux --log-path /tmp/ssh-agent-mux.log
+```
+
+### Multiple Backend Agents
+
+```bash
+# Chain multiple backend agents
+ssh-agent-mux \
+  --backend-agent ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock \
+  --backend-agent ~/.ssh/another-agent.sock
 ```
 
 ## Command-Line Options
 
-- `-socket <path>` - Path to Unix socket for the agent (default: `/tmp/ssh-agent-mux-<uid>.sock`)
-- `-fallback <path>` - Path to fallback SSH agent socket (default: value of `$SSH_AUTH_SOCK`)
-- `-verbose` - Enable verbose logging
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--socket` | `-s` | Path to Unix socket for the agent | `~/.ssh/ssh-agent-mux.sock` |
+| `--backend-agent` | `-p` | Path to backend SSH agent socket (repeatable) | `$SSH_AUTH_SOCK` |
+| `--foreground` | `-f` | Run in foreground (don't daemonize) | `false` |
+| `--debug` | `-d` | Enable debug logging | `false` |
+| `--quiet` | `-q` | Quiet output | `false` |
+| `--log-path` | `-l` | Path to log file | stderr |
+| `--command` | `-c` | Run a command (e.g., `config`, `ping`, `shutdown`) | - |
+| `--help` | `-h` | Show help | - |
+| `--version` | `-v` | Show version | - |
 
-## Use Cases
+## Management Commands
 
-### 1Password + Ephemeral Keys
+### Check if Running
 
-1Password's SSH agent doesn't allow adding keys via `ssh-add`. This multiplexer lets you:
-- Use all your 1Password SSH keys normally
-- Add temporary keys (build servers, temporary access, etc.) that you don't want to store in 1Password
-- Have everything work through a single `SSH_AUTH_SOCK`
-
-### Multiple Agents
-
-You can chain multiple agents or use specialized agents for different purposes while presenting a unified interface to SSH clients.
-
-## Architecture
-
-```
-┌─────────────────┐
-│   SSH Client    │
-└────────┬────────┘
-         │
-    ┌────▼────┐
-    │ ssh-    │
-    │ agent-  │  ┌──────────────┐
-    │ mux     ├─►│ Local Keys   │
-    │         │  │ (ephemeral)  │
-    └────┬────┘  └──────────────┘
-         │
-         │ fallback
-         │
-    ┌────▼────────┐
-    │  1Password  │
-    │  SSH Agent  │
-    └─────────────┘
+```bash
+ssh-agent-mux -c config
 ```
 
-## Technical Details
+Output:
+```
+Socket Path: /Users/yourname/.ssh/ssh-agent-mux.sock
+Backend Socket Paths:
+ - /Users/yourname/.config/1Password/agent.sock
+PID: 12345
+Start Time: 2025-12-14 10:30:00
+Version: v1.0.0
+```
 
-- Written in Go
-- Uses `golang.org/x/crypto/ssh/agent` for SSH agent protocol
-- Thread-safe key storage with mutex protection
-- Implements the full SSH agent protocol interface
+### Ping the Agent
+
+```bash
+ssh-agent-mux -c ping
+```
+
+### Shutdown the Agent
+
+```bash
+ssh-agent-mux -c shutdown
+```
+
+## Common Use Cases
+
+### 1. 1Password + Deploy Keys
+
+**Problem:** You use 1Password for your personal SSH keys, but need to add deploy keys for CI/CD.
+
+**Solution:**
+```bash
+# Start ssh-agent-mux pointing to 1Password
+ssh-agent-mux --backend-agent ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
+
+# Add your deploy key temporarily
+ssh-add ~/.ssh/deploy_key
+
+# Both your 1Password keys and deploy key work
+```
+
+### 2. Temporary Access Keys
+
+**Problem:** You need a temporary key for accessing a bastion host, but don't want to store it permanently.
+
+**Solution:**
+```bash
+# Add the temporary key
+ssh-add /tmp/bastion_key
+
+# Use it
+ssh -J bastion.example.com internal.example.com
+
+# It's automatically removed when you remove it or restart the agent
+ssh-add -d /tmp/bastion_key
+```
+
+### 3. Testing SSH Keys
+
+**Problem:** You want to test a new SSH key without affecting your main agent configuration.
+
+**Solution:**
+```bash
+# Start in foreground for testing
+ssh-agent-mux --foreground --debug
+
+# In another terminal
+ssh-add ~/.ssh/test_key
+ssh -T git@github.com
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `SSH_AGENT_MUX_SOCKET` | Override socket path |
+| `SSH_AGENT_MUX_FOREGROUND` | Run in foreground if set to `1` or `true` |
+| `SSH_AGENT_MUX_LOGPATH` | Log file path |
+| `SSH_AUTH_SOCK` | Used as default backend agent path |
+| `DEBUG` | Enable debug logging if set to `1` or `true` |
+
+## Architecture & Technical Details
+
+### Key Features
+
+- **Thread-safe:** All operations are protected by mutexes
+- **Memory-safe:** Fixed goroutine leaks and proper resource cleanup
+- **Long-running:** Designed to run as a background daemon indefinitely
+- **Graceful shutdown:** Properly handles SIGTERM/SIGINT signals
+- **Zero configuration:** Works out of the box with sensible defaults
+
+### Implementation
+
+- **Language:** Go 1.24+
+- **SSH Protocol:** `golang.org/x/crypto/ssh/agent`
+- **Key Storage:** In-memory map with read-write mutex
+- **Backend Communication:** Unix domain sockets
+- **Process Management:** Daemon mode with proper signal handling
+
+### Security Considerations
+
+- Keys are stored **in memory only** (never written to disk)
+- Socket permissions are restricted to user-only (0600)
+- Backend agent credentials are never cached or stored
+- All cryptographic operations use Go's standard crypto library
+
+## Troubleshooting
+
+### Agent Not Starting
+
+```bash
+# Check if socket already exists
+ls -la ~/.ssh/ssh-agent-mux.sock
+
+# Remove stale socket
+rm ~/.ssh/ssh-agent-mux.sock
+
+# Start in foreground to see errors
+ssh-agent-mux --foreground --debug
+```
+
+### Keys Not Showing Up
+
+```bash
+# Verify the agent is running
+ssh-agent-mux -c config
+
+# Check SSH_AUTH_SOCK points to the right socket
+echo $SSH_AUTH_SOCK
+
+# List keys with verbose output
+SSH_AUTH_SOCK=~/.ssh/ssh-agent-mux.sock ssh-add -l
+```
+
+### Can't Add Keys
+
+```bash
+# Make sure you're using the mux socket
+export SSH_AUTH_SOCK="$HOME/.ssh/ssh-agent-mux.sock"
+
+# Try adding with verbose output
+ssh-add -v ~/.ssh/your_key
+```
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+### Building
+
+```bash
+# Using mage
+mage build
+
+# Or directly with Go
+go build -o ssh-agent-mux ./cmd/ssh-agent-mux
+```
+
+### Testing
+
+```bash
+# Run tests
+go test ./...
+
+# Run demo script
+./demo.sh
+```
 
 ## License
 
@@ -144,5 +348,18 @@ See [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+## Acknowledgments
+
+- Inspired by the need to use 1Password's SSH agent with temporary keys
+- Uses the excellent `golang.org/x/crypto/ssh/agent` library
+- Daemon code adapted from [go-daemon](https://github.com/jaw0/go-daemon)
 

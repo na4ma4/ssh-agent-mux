@@ -1,0 +1,56 @@
+edition = "2023";
+
+package sshagentmux.api;
+option go_package = "github.com/na4ma4/ssh-agent-mux/api";
+
+import "google/protobuf/go_features.proto";
+option features.(pb.go).api_level = API_OPAQUE;
+
+import "google/protobuf/timestamp.proto";
+import "github.com/dosquad/go-cliversion/version.proto";
+
+message Config {
+	string id = 1;
+	google.protobuf.Timestamp ts = 2;
+
+	string socket_path = 10;
+	repeated string backend_socket_path = 11;
+	int64 pid = 12;
+	google.protobuf.Timestamp start_time = 13;
+
+	string version = 100;
+	dosquad.cliversion.VersionInfo version_info = 101;
+}
+
+message Ping {
+	string id = 1;
+	google.protobuf.Timestamp ts = 2;
+}
+
+message Pong {
+	string id = 1;
+	google.protobuf.Timestamp ts = 2;
+
+	int64 pid = 10;
+	string version = 11;
+}
+
+message ShutdownRequest {
+	string id = 1;
+	google.protobuf.Timestamp ts = 2;
+
+	bool force = 10;
+}
+
+message CommandResponse {
+	string id = 1;
+	google.protobuf.Timestamp ts = 2;
+
+	bool success = 10;
+	string message = 11;
+}
+
+message ConfigRequest {
+	string id = 1;
+	google.protobuf.Timestamp ts = 2;
+}
