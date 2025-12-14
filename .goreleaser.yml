@@ -82,8 +82,6 @@ homebrew_casks:
     repository:
       owner: na4ma4
       name: homebrew-tap
-    ids:
-      - ssh-agent-mux
     binaries:
       - ssh-agent-mux
     commit_author:
