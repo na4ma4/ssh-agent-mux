@@ -16,8 +16,8 @@ github.com/dosquad/go-cliversion v0.3.0 h1:YQG2EOQX9dmfd/+4h3X+ee9nMPqbqxaHhsa/7
 github.com/dosquad/go-cliversion v0.3.0/go.mod h1:Gliu0a5jfTOsxfdXoxhGz3bDHva5gMJPn/Bcuh94sTg=
 github.com/dosquad/go-giturl v0.1.1 h1:5rAICr4ycztRDDia/BzcX5QKyQI6vZ3i8HMbZZT9/sw=
 github.com/dosquad/go-giturl v0.1.1/go.mod h1:rlSpkXg6Ra92tAHXDBLvCy6ddWJt/9Go+5dc2WVtZS8=
-github.com/dosquad/mage v0.3.2 h1:8qSq2KMP6gXCeOX7veQiR3JZ9fIwXqepoKMaH46qflk=
-github.com/dosquad/mage v0.3.2/go.mod h1:Tmm5SwOBLh5mw9Zzwllrrr0/DOnqOJmvqEbh/dWIkBg=
+github.com/dosquad/mage v0.3.4 h1:5DU1JMwxTWbvytPa4BcjpLFenzkLQM57c+O+xMW2EMk=
+github.com/dosquad/mage v0.3.4/go.mod h1:Tmm5SwOBLh5mw9Zzwllrrr0/DOnqOJmvqEbh/dWIkBg=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=
@@ -61,6 +61,7 @@ github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/f
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
 go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
 golang.org/x/net v0.48.0 h1:zyQRTTrjc33Lhh0fBgT/H3oZq9WuvRR5gPC70xpDiQU=
