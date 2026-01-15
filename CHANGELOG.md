@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.0...v0.2.1) (2026-01-15)
+
+
+### Bug Fixes
+
+* **release-please:** update GitHub Actions workflow for release-please ([0d9e52a](https://github.com/na4ma4/ssh-agent-mux/commit/0d9e52ade07e8a06f65043e859b5258c3921a3dc))
+
 ## 0.2.0 (2026-01-15)
 
 
