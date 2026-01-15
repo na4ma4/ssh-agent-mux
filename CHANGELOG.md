@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.2...v0.2.3) (2026-01-15)
+
+
+### Bug Fixes
+
+* **release-please:** ensure full git history is fetched ([a137c7e](https://github.com/na4ma4/ssh-agent-mux/commit/a137c7edef8a0668ea87403d0aae46d9ffb295e6))
+
 ## [0.2.2](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.1...v0.2.2) (2026-01-15)
 
 
