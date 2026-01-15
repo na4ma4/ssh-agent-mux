@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/na4ma4/go-slogtool"
+	"github.com/na4ma4/go-timestring"
 	"github.com/na4ma4/ssh-agent-mux/api"
 	"github.com/na4ma4/ssh-agent-mux/internal/muxclient"
 	"github.com/spf13/viper"
@@ -31,10 +33,23 @@ func handleCommand(ctx context.Context, logger *slog.Logger, command string) err
 	var socket *muxclient.MuxClient
 	{
 		var err error
-		socket, err = muxclient.NewMuxClient(socketPath)
+		socket, err = muxclient.NewMuxClient(logger, socketPath)
 		if err != nil {
 			logger.ErrorContext(ctx, "Failed to create mux client", slogtool.ErrorAttr(err))
 			return err
+		}
+
+		if !socket.IsSocketWorking(ctx) && viper.GetString("socket") != socketPath {
+			logger.DebugContext(ctx, "Socket is not active, attempting to connect to default socket",
+				slog.String("socket-path", socketPath),
+				slog.String("default-socket-path", viper.GetString("socket")),
+			)
+
+			socket, err = muxclient.NewMuxClient(logger, viper.GetString("socket"))
+			if err != nil {
+				logger.ErrorContext(ctx, "Failed to create mux client for default socket", slogtool.ErrorAttr(err))
+				return err
+			}
 		}
 	}
 
@@ -51,13 +66,43 @@ func handleCommand(ctx context.Context, logger *slog.Logger, command string) err
 }
 
 func handleCommandPing(ctx context.Context, logger *slog.Logger, socket *muxclient.MuxClient) error {
+	logger.DebugContext(ctx, "handleCommandPing()")
 	pongMsg, err := socket.Ping(ctx)
 	if err != nil {
 		logger.ErrorContext(ctx, "Ping command failed", slogtool.ErrorAttr(err))
 		return err
 	}
+	recvTS := time.Now()
 
-	fmt.Fprintf(os.Stdout, "Received pong: ID=%s, TS=%s\n", pongMsg.GetId(), pongMsg.GetTs().AsTime().String())
+	fmt.Fprintln(os.Stdout, "Received ping reply")
+	fmt.Fprintf(os.Stdout, "  ID=%s\n", pongMsg.GetId())
+	fmt.Fprintf(os.Stdout, "  PID=%d\n", pongMsg.GetPid())
+	fmt.Fprintf(os.Stdout, "  Version=%s\n", pongMsg.GetVersion())
+
+	if pongMsg.HasStartTime() {
+		fmt.Fprintf(os.Stdout, "  Mux Agent Start Time=%s (%s)\n",
+			pongMsg.GetStartTime().AsTime().String(),
+			timestring.ShortProcess.String(time.Since(pongMsg.GetStartTime().AsTime())),
+		)
+	}
+
+	fmt.Fprintln(os.Stdout, "  Latency:")
+	fmt.Fprintf(os.Stdout, "    Recv TS=%s\n", pongMsg.GetTs().AsTime().String())
+
+	if pongMsg.HasPingTs() {
+		fmt.Fprintf(os.Stdout, "    Sent TS=%s\n", pongMsg.GetPingTs().AsTime().String())
+		fmt.Fprintf(os.Stdout, "    Latency To Mux=%s\n",
+			timestring.ShortProcess.String(pongMsg.GetTs().AsTime().Sub(pongMsg.GetPingTs().AsTime())),
+		)
+
+		fmt.Fprintf(os.Stdout, "    Latency From Mux=%s\n",
+			timestring.ShortProcess.String(recvTS.Sub(pongMsg.GetTs().AsTime())),
+		)
+
+		fmt.Fprintf(os.Stdout, "    Total Roundtrip Latency=%s\n",
+			timestring.ShortProcess.String(recvTS.Sub(pongMsg.GetPingTs().AsTime())),
+		)
+	}
 
 	return nil
 }

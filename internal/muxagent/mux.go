@@ -50,9 +50,7 @@ func NewMuxAgent(ctx contextual.Context, logger *slog.Logger, config *api.Config
 	return m, nil
 }
 
-var (
-	errExitBackendLoop = errors.New("exit backend loop")
-)
+var errExitBackendLoop = errors.New("exit backend loop")
 
 func (m *MuxAgent) runAgainstBackends(f func(agent.ExtendedAgent) error) error {
 	for _, socketPath := range m.config.GetBackendSocketPath() {
@@ -387,10 +385,12 @@ func (m *MuxAgent) handlePing(msg *api.Ping) (*api.Pong, error) {
 	m.logger.DebugContext(m.ctx, "handlePing called", slog.String("msg-id", msg.GetId()))
 
 	pong := api.Pong_builder{
-		Id:      proto.String(msg.GetId()),
-		Ts:      msg.GetTs(),
-		Pid:     proto.Int64(int64(syscall.Getpid())),
-		Version: proto.String(cliversion.Get().VersionString()),
+		Id:        proto.String(msg.GetId()),
+		PingTs:    msg.GetTs(),
+		Ts:        timestamppb.Now(),
+		Pid:       proto.Int64(int64(syscall.Getpid())),
+		StartTime: m.config.GetStartTime(),
+		Version:   proto.String(cliversion.Get().VersionString()),
 	}.Build()
 
 	return pong, nil
