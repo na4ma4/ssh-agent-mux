@@ -15,24 +15,15 @@ import (
 var ErrSocketActive = errors.New("socket is active and ssh-agent-mux is running")
 
 func removeSocketIfExists(ctx context.Context, logger *slog.Logger, socketPath string) error {
+	conn, _ := muxclient.NewMuxClient(logger, socketPath)
+
 	// check if socket exists
-	{
-		stat, err := os.Stat(socketPath)
-		if os.IsNotExist(err) {
-			logger.DebugContext(ctx, "Socket does not exist", slog.String("socket-path", socketPath))
-			return nil
-		} else if err != nil {
-			logger.DebugContext(ctx, "Failed to stat socket", slog.String("socket-path", socketPath), slogtool.ErrorAttr(err))
-			return err
-		}
-		if stat.Mode()&os.ModeSocket == 0 {
-			logger.DebugContext(ctx, "File exists and is not a socket", slog.String("socket-path", socketPath))
-			return fmt.Errorf("file %s exists and is not a socket", socketPath)
-		}
+	if socketExists, err := conn.SocketExists(ctx); err != nil {
+		return err
+	} else if !socketExists {
+		return nil
 	}
 
-	// attempt to connect to socket to see if it is active
-	conn, _ := muxclient.NewMuxClient(socketPath)
 	if _, err := conn.Ping(ctx); err == nil {
 		// if active return error
 		logger.DebugContext(ctx, "Socket is active", slog.String("socket-path", socketPath))
@@ -40,11 +31,8 @@ func removeSocketIfExists(ctx context.Context, logger *slog.Logger, socketPath s
 	}
 
 	// if not active, remove socket file
-	if err := os.Remove(socketPath); err != nil {
-		logger.DebugContext(ctx, "Failed to remove socket",
-			slog.String("socket-path", socketPath), slogtool.ErrorAttr(err),
-		)
-		return fmt.Errorf("failed to remove socket %s: %w", socketPath, err)
+	if err := conn.RemoveSocket(ctx); err != nil {
+		return err
 	}
 
 	logger.DebugContext(ctx, "Removed stale socket", slog.String("socket-path", socketPath))
@@ -59,7 +47,7 @@ func printRunningConfig(ctx context.Context, logger *slog.Logger, socketPath str
 	var muxClient *muxclient.MuxClient
 	{
 		var err error
-		muxClient, err = muxclient.NewMuxClient(socketPath)
+		muxClient, err = muxclient.NewMuxClient(logger, socketPath)
 		if err != nil {
 			logger.ErrorContext(ctx, "Failed to create mux client", slogtool.ErrorAttr(err))
 			return err

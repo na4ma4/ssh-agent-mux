@@ -211,6 +211,16 @@ func runMainProgramDaemonMode(ctx context.Context, logger *slog.Logger) error {
 		return err
 	}
 
+	// Check socket and remove if it exists and is not active
+	if err := removeSocketIfExists(ctx, logger, viper.GetString("socket")); err != nil {
+		if errors.Is(err, ErrSocketActive) {
+			return printRunningConfig(ctx, logger, viper.GetString("socket"))
+		}
+
+		logger.ErrorContext(ctx, "Failed to remove existing socket", slogtool.ErrorAttr(err))
+		return err
+	}
+
 	return printRunningConfig(ctx, logger, viper.GetString("socket"))
 }
 
