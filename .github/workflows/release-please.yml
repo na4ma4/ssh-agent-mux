@@ -10,12 +10,16 @@ permissions:
 
 name: release-please
 
+env:
+  PLATFORMS: linux/amd64,linux/arm64,darwin/arm64
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release-please.outputs.release_created }}
       tag_name: ${{ steps.release-please.outputs.tag_name }}
+      version: ${{ steps.release-please.outputs.version }}
     steps:
       - name: Release Please
         id: release-please
@@ -51,7 +55,6 @@ jobs:
         uses: magefile/mage-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          PLATFORMS: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64,windows/amd64,windows/arm64
         with:
           version: latest
           args: build:archive
@@ -82,4 +85,3 @@ jobs:
           git add Casks/ssh-agent-mux.rb
           git commit -m "ssh-agent-mux ${VERSION}"
           git push origin main
-   
