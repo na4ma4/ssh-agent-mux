@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.1...v0.2.2) (2026-01-15)
+
+
+### Bug Fixes
+
+* **release-please:** correct download URLs in Homebrew cask script ([0a9517e](https://github.com/na4ma4/ssh-agent-mux/commit/0a9517ebfe09cb22354474f1d971d3bb3a809b49))
+
 ## [0.2.1](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.0...v0.2.1) (2026-01-15)
 
 
