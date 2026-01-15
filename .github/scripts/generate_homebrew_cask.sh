@@ -24,18 +24,18 @@ cask "ssh-agent-mux" do
 
   on_macos do
     on_arm do
-      url "https://github.com/na4ma4/ssh-agent-mux/releases/download/#{version}/ssh-agent-mux_darwin_arm64.tar.gz"
+      url "https://github.com/na4ma4/ssh-agent-mux/releases/download/v#{version}/ssh-agent-mux_darwin_arm64.tar.gz"
       sha256 "${SHA_DARWIN_ARM64}"
     end
   end
 
   on_linux do
     on_intel do
-      url "https://github.com/na4ma4/ssh-agent-mux/releases/download/#{version}/ssh-agent-mux_linux_amd64.tar.gz"
+      url "https://github.com/na4ma4/ssh-agent-mux/releases/download/v#{version}/ssh-agent-mux_linux_amd64.tar.gz"
       sha256 "${SHA_LINUX_AMD64}"
     end
     on_arm do
-      url "https://github.com/na4ma4/ssh-agent-mux/releases/download/#{version}/ssh-agent-mux_linux_arm64.tar.gz"
+      url "https://github.com/na4ma4/ssh-agent-mux/releases/download/v#{version}/ssh-agent-mux_linux_arm64.tar.gz"
       sha256 "${SHA_LINUX_ARM64}"
     end
   end
