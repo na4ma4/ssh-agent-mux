@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.3...v0.3.0) (2026-01-16)
+
+
+### Features
+
+* **ping:** improve time formatting in ping response ([070f8ac](https://github.com/na4ma4/ssh-agent-mux/commit/070f8acc609a4b1e9553e5eff28f4b4444a041e8))
+
 ## [0.2.3](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.2...v0.2.3) (2026-01-15)
 
 
