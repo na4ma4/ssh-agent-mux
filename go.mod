@@ -8,7 +8,7 @@ require (
 	github.com/na4ma4/go-contextual v0.2.0
 	github.com/na4ma4/go-permbits v0.5.3
 	github.com/na4ma4/go-slogtool v0.1.3
-	github.com/na4ma4/go-timestring v0.4.0
+	github.com/na4ma4/go-timestring v0.5.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	golang.org/x/crypto v0.47.0

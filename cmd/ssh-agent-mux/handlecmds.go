@@ -65,6 +65,7 @@ func handleCommand(ctx context.Context, logger *slog.Logger, command string) err
 	}
 }
 
+//nolint:gosmopolitan // I want local time here
 func handleCommandPing(ctx context.Context, logger *slog.Logger, socket *muxclient.MuxClient) error {
 	logger.DebugContext(ctx, "handleCommandPing()")
 	pongMsg, err := socket.Ping(ctx)
@@ -80,27 +81,31 @@ func handleCommandPing(ctx context.Context, logger *slog.Logger, socket *muxclie
 	fmt.Fprintf(os.Stdout, "  Version=%s\n", pongMsg.GetVersion())
 
 	if pongMsg.HasStartTime() {
-		fmt.Fprintf(os.Stdout, "  Mux Agent Start Time=%s (%s)\n",
-			pongMsg.GetStartTime().AsTime().String(),
-			timestring.ShortProcess.String(time.Since(pongMsg.GetStartTime().AsTime())),
+		fmt.Fprintf(os.Stdout, "  Mux Agent Start Time=%s\n",
+			pongMsg.GetStartTime().AsTime().Local().String(),
+		)
+		fmt.Fprintf(os.Stdout, "  Mux Agent Uptime=%s\n",
+			timestring.LongProcess.
+				Option(timestring.Abbreviated).
+				String(time.Since(pongMsg.GetStartTime().AsTime())),
 		)
 	}
 
 	fmt.Fprintln(os.Stdout, "  Latency:")
-	fmt.Fprintf(os.Stdout, "    Recv TS=%s\n", pongMsg.GetTs().AsTime().String())
+	fmt.Fprintf(os.Stdout, "    Recv TS=%s\n", pongMsg.GetTs().AsTime().Local().String())
 
 	if pongMsg.HasPingTs() {
-		fmt.Fprintf(os.Stdout, "    Sent TS=%s\n", pongMsg.GetPingTs().AsTime().String())
+		fmt.Fprintf(os.Stdout, "    Sent TS=%s\n", pongMsg.GetPingTs().AsTime().Local().String())
 		fmt.Fprintf(os.Stdout, "    Latency To Mux=%s\n",
-			timestring.ShortProcess.String(pongMsg.GetTs().AsTime().Sub(pongMsg.GetPingTs().AsTime())),
+			timestring.Absolute.String(pongMsg.GetTs().AsTime().Sub(pongMsg.GetPingTs().AsTime())),
 		)
 
 		fmt.Fprintf(os.Stdout, "    Latency From Mux=%s\n",
-			timestring.ShortProcess.String(recvTS.Sub(pongMsg.GetTs().AsTime())),
+			timestring.Absolute.String(recvTS.Sub(pongMsg.GetTs().AsTime())),
 		)
 
 		fmt.Fprintf(os.Stdout, "    Total Roundtrip Latency=%s\n",
-			timestring.ShortProcess.String(recvTS.Sub(pongMsg.GetPingTs().AsTime())),
+			timestring.Absolute.String(recvTS.Sub(pongMsg.GetPingTs().AsTime())),
 		)
 	}
 
