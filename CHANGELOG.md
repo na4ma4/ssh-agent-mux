@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/na4ma4/ssh-agent-mux/compare/v0.3.0...v0.4.0) (2026-01-27)
+
+
+### Features
+
+* **github-actions:** switch to reusable workflow for release-please ([#16](https://github.com/na4ma4/ssh-agent-mux/issues/16)) ([e78f0de](https://github.com/na4ma4/ssh-agent-mux/commit/e78f0ded8ee269b2843873b2eb6446fb1239f4f5))
+
 ## [0.3.0](https://github.com/na4ma4/ssh-agent-mux/compare/v0.2.3...v0.3.0) (2026-01-16)
 
 
