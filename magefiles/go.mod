@@ -1,6 +1,6 @@
 module github.com/na4ma4/ssh-agent-mux/magefiles
 
-go 1.24
+go 1.24.1
 
 toolchain go1.24.6
 
@@ -13,7 +13,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.7 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dosquad/go-cliversion v0.3.0 // indirect
 	github.com/dosquad/go-giturl v0.1.1 // indirect
