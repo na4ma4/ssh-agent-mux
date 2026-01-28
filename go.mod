@@ -5,7 +5,7 @@ go 1.24.1
 require (
 	github.com/dosquad/go-cliversion v0.3.0
 	github.com/google/uuid v1.6.0
-	github.com/na4ma4/go-contextual v0.2.0
+	github.com/na4ma4/go-contextual v0.3.0
 	github.com/na4ma4/go-permbits v0.5.3
 	github.com/na4ma4/go-slogtool v0.1.3
 	github.com/na4ma4/go-timestring v0.5.0
